@@ -1,5 +1,7 @@
 # pi-view-port
 
+> 📖 English | [中文](README.zh.md)
+
 A generic file preview component library based on Vue 3 + TypeScript.
 Supports preview of PDF, Markdown, HTML, images, videos, audio, and **Office documents (Word, Excel, PPT)**.
 Originally used for internal applications, now decoupled as an independent library to facilitate external application integration.
