@@ -1,0 +1,6 @@
+export { default as FileViewer } from './src/components/FileViewer/FileViewer.vue'
+export { default as OnlyOfficeDoc } from './src/components/OnlyOffice/OnlyOfficeDoc.vue'
+export { default as OnlyOfficeXls } from './src/components/OnlyOffice/OnlyOfficeXls.vue'
+export { default as OnlyOfficePpt } from './src/components/OnlyOffice/OnlyOfficePpt.vue'
+export { provideViewerTheme, useViewerTheme, VIEWER_THEME_KEY } from './src/theme'
+export * from './src/types'
