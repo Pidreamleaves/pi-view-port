@@ -4,10 +4,10 @@
   "description": "A Vue 3 component for previewing files.",
   "main": "./dist/pi-view-port.umd.js",
   "module": "./dist/pi-view-port.es.js",
-  "types": "./dist/index.d.ts",
+  "types": "./dist/pi-view-port.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
+      "types": "./dist/pi-view-port.d.ts",
       "import": "./dist/pi-view-port.es.js",
       "require": "./dist/pi-view-port.umd.js"
     },
