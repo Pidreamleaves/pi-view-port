@@ -28,7 +28,8 @@ export default defineConfig({
         'serve-static',
         'path',
         'fs',
-        'vite'
+        'vite',
+        'url'
       ],
       output: {
         globals: {

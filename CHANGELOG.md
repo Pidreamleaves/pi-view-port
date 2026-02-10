@@ -34,3 +34,9 @@ All notable changes to this project will be documented in this file.
 ### Refactored
 - Simplified theme control logic by removing the redundant `isDark` prop. The `theme` prop ('light' | 'dark' | 'auto') now handles all theme scenarios.
 
+## [0.1.5] - 2026-02-11
+
+### Fixed
+- Fixed missing type definitions for the Vite plugin.
+- Fixed an issue where Office documents could not be previewed due to resource loading errors.
+

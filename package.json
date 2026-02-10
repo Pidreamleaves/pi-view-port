@@ -1,6 +1,6 @@
 {
   "name": "pi-view-port",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "A Vue 3 component for previewing files.",
   "main": "./dist/pi-view-port.umd.js",
   "module": "./dist/pi-view-port.es.js",
@@ -12,6 +12,7 @@
       "require": "./dist/pi-view-port.umd.js"
     },
     "./vite": {
+      "types": "./dist/vite.d.ts",
       "import": "./dist/vite.mjs",
       "require": "./dist/vite.cjs"
     },
