@@ -3,11 +3,11 @@ import { describe, it, expect } from 'vitest'
 import FileViewer from '../FileViewer.vue'
 
 describe('FileViewer.vue', () => {
-  it('uses isDark prop and default styles', async () => {
+  it('resolves theme from theme prop', async () => {
     const wrapper = mount(FileViewer, {
       props: {
         fileType: 'unknown',
-        isDark: true
+        theme: 'dark'
       }
     })
     await wrapper.vm.$nextTick()

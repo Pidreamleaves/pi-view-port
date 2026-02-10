@@ -1,6 +1,6 @@
 {
   "name": "pi-view-port",
-  "version": "0.1.1",
+  "version": "0.1.4",
   "description": "A Vue 3 component for previewing files.",
   "main": "./dist/pi-view-port.umd.js",
   "module": "./dist/pi-view-port.es.js",
@@ -26,6 +26,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "bp": "vite build && npm pack",
     "test": "vitest",
     "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix --ignore-path .gitignore",
     "type-check": "vue-tsc --noEmit"

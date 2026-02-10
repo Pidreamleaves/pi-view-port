@@ -1535,6 +1535,19 @@ export function createEditorInstance(config: {
   const finalContainerId = actualContainerId || manager.getContainerId();
   console.log(`[CreateEditor] finalContainerId: ${finalContainerId}, actualContainerId: ${actualContainerId}, manager.containerId: ${manager.getContainerId()}, manager.instanceId: ${manager.getInstanceId()}`);
   
+  // 关键修复：强制设置 LocalStorage，覆盖 OnlyOffice 的默认行为
+  // OnlyOffice WASM 版本会优先读取 localStorage['ui-theme-id']，导致 editorConfig 中的 theme 被忽略
+  if (theme) {
+    try {
+      console.log(`🎨 [CreateEditor] Force setting localStorage ui-theme-id to ${theme}`);
+      localStorage.setItem('ui-theme-id', theme);
+      // 兼容性设置
+      localStorage.setItem('ui-theme', theme);
+    } catch (e) {
+      console.warn('[CreateEditor] Failed to set localStorage:', e);
+    }
+  }
+
   // 将初始媒体文件同步到全局 media 对象
   if (initialMedia) {
     Object.keys(initialMedia).forEach(key => {
@@ -1602,6 +1615,11 @@ export function createEditorInstance(config: {
     editorConfig: {
       // mode: readOnly ? 'view' : 'edit', // 根据 readOnly 参数设置模式
       lang: lang,
+      // 添加默认用户配置，防止在 view 模式下因缺少用户信息导致 getInitials 报错
+      user: {
+        id: 'uid-1',
+        name: 'Guest'
+      },
       customization: {
         uiTheme: theme || 'theme-light', // 设置初始主题
          leftMenu: false, // must be deprecated. use layout.leftMenu instead
@@ -1642,6 +1660,27 @@ export function createEditorInstance(config: {
             data: { urls: instanceMedia },
           });
         }
+        
+        // 强制应用主题：解决 WASM 版本中初始化配置 uiTheme 可能被忽略的问题
+        // 尝试通过命令强制设置
+        if (theme) {
+          console.log(`🎨 [OnAppReady ${manager.getInstanceId()}] Enforcing theme: ${theme}`);
+          try {
+            // 尝试多种可能的命令格式，以兼容不同版本
+            editor.sendCommand({
+              command: 'asc_SetTheme',
+              data: { themeId: theme }
+            });
+            // 备用命令
+            editor.sendCommand({
+              command: 'asc_setTheme',
+              data: { id: theme }
+            });
+          } catch (e) {
+            console.warn(`[OnAppReady ${manager.getInstanceId()}] Failed to enforce theme:`, e);
+          }
+        }
+
         // 加载文档内容
         editor.sendCommand({
           command: 'asc_openDocument',
@@ -1650,6 +1689,22 @@ export function createEditorInstance(config: {
       },
       onDocumentReady: () => {
         console.log('文档加载完成：', fileName);
+
+        // 如果是只读模式，强制禁用编辑权限
+        if (readOnly) {
+          try {
+            editor.sendCommand({
+              command: 'processRightsChange',
+              data: {
+                enabled: false,
+                message: '文档已设置为只读模式'
+              },
+            });
+          } catch (e) {
+            console.warn('OnlyOffice: 设置只读模式失败', e);
+          }
+        }
+
         // 触发 documentReady 事件
         onlyofficeEventbus.emit(ONLYOFFICE_EVENT_KEYS.DOCUMENT_READY, {
           fileName,
@@ -1727,21 +1782,10 @@ export async function createEditorView(options: {
       editorManager: providedManager,
     });
     
-    // 如果需要在文档就绪后设置只读模式
-    if (readOnly) {
-      let hasUsed = false;
-      onlyofficeEventbus.on(ONLYOFFICE_EVENT_KEYS.DOCUMENT_READY, () => {
-        if (!hasUsed) {
-          manager.setReadOnly(readOnly);
-          hasUsed = true;
-        }
-      });
-    }
-    
     return manager;
   } catch (error: any) {
     console.error('文档操作失败：', error);
-    alert(`文档操作失败：${error.message}`);
+    // alert(`文档操作失败：${error.message}`);
     throw error;
   }
 }

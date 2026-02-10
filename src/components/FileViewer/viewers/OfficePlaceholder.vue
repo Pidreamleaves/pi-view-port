@@ -12,9 +12,7 @@ const props = withDefaults(defineProps<{
   fileName?: string;
   /** 文件数据 */
   fileData?: Blob | File;
-  /** 主题模式：'light' | 'dark' | 'auto' */
-  theme?: 'light' | 'dark' | 'auto';
-  /** 主题暗色状态 */
+  /** 主题暗色状态 (从父组件计算得出) */
   isDark?: boolean;
   useDefaultStyles?: boolean;
   /** Office 组件专属配置 */
@@ -100,6 +98,20 @@ const onError = (err: any) => {
   activeComponent.value = null;
   error.value = err.message || '文档加载失败';
 };
+
+// 暴露子组件的 save 方法
+const officeComponentRef = ref<any>(null);
+const save = () => {
+  if (officeComponentRef.value && typeof officeComponentRef.value.save === 'function') {
+    officeComponentRef.value.save();
+  } else {
+    console.warn('OfficePlaceholder: Current component does not support save');
+  }
+};
+
+defineExpose({
+  save,
+});
 </script>
 
 <template>
@@ -120,9 +132,9 @@ const onError = (err: any) => {
     <component
       :is="activeComponent"
       v-else-if="activeComponent && fileObject"
+      ref="officeComponentRef"
       :file="fileObject"
       :read-only="!props.officeConfig?.editable"
-      :theme="props.theme"
       :is-dark="props.isDark"
       @ready="onReady"
       @error="onError"

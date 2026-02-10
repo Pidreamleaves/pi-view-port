@@ -6,6 +6,7 @@ A generic file preview component library based on Vue 3 + TypeScript.
 Supports preview of PDF, Markdown, HTML, images, videos, audio, and **Office documents (Word, Excel, PPT)**.
 Originally used for internal applications, now decoupled as an independent library to facilitate external application integration.
 
+[![GitHub](https://img.shields.io/badge/GitHub-Repository-181717?style=flat-square&logo=github)](https://github.com/Pidreamleaves/pi-view-port)
 ![Vue 3](https://img.shields.io/badge/Vue-3.x-42b883?style=flat-square)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue?style=flat-square)
 ![License](https://img.shields.io/badge/License-AGPL-green?style=flat-square)
@@ -129,7 +130,6 @@ If you are not using Vite or cannot use the plugin, you can manually copy the re
 | `fileType` | `string` | - | Explicitly specify file type (e.g., 'pdf', 'docx'); automatically detected if not passed |
 | `fullscreen` | `boolean` | `false` | Whether to start in fullscreen |
 | `theme` | `'light' \| 'dark' \| 'auto'` | `'auto'` | Theme mode |
-| `isDark` | `boolean` | - | Force specify dark mode state |
 | `useDefaultStyles` | `boolean` | `true` | Whether to enable default container styles |
 | `officeConfig` | `object` | `{ editable: false }` | Office component exclusive configuration (see table below) |
 
@@ -166,6 +166,58 @@ If you don't need the complete `FileViewer` wrapper (toolbar, etc.), you can imp
 
 ```ts
 import { OnlyOfficeDoc, OnlyOfficeXls } from 'pi-view-port';
+```
+
+### Manual Save
+
+The `FileViewer` component (and underlying OnlyOffice sub-components) exposes a `save()` method that allows you to trigger the save process programmatically.
+
+```vue
+<script setup lang="ts">
+import { ref } from 'vue';
+import { FileViewer } from 'pi-view-port';
+
+const viewerRef = ref();
+
+const handleSave = () => {
+  // 1. Trigger the save generation process
+  viewerRef.value?.save();
+};
+
+const onSaveComplete = async (data: any) => {
+  // data contains: { fileName, fileType, binData (Uint8Array) }
+  console.log('File generated:', data.fileName);
+
+  // 2. Convert binary data to File object
+  const file = new File([data.binData], data.fileName, {
+    type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+  });
+
+  // 3. Upload to your server
+  const formData = new FormData();
+  formData.append('file', file);
+
+  try {
+    await fetch('/api/upload', {
+      method: 'POST',
+      body: formData
+    });
+    alert('Saved successfully!');
+  } catch (err) {
+    console.error('Upload failed', err);
+  }
+};
+</script>
+
+<template>
+  <button @click="handleSave">Save & Upload</button>
+  <FileViewer
+    ref="viewerRef"
+    :file-url="fileUrl"
+    :office-config="{ editable: true }"
+    @save="onSaveComplete"
+  />
+</template>
 ```
 
 ## FAQ

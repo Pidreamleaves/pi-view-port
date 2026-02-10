@@ -10,3 +10,27 @@ All notable changes to this project will be documented in this file.
 - Support for Office documents (Word, Excel, PPT) via OnlyOffice WASM.
 - Theme support (Light/Dark).
 - TypeScript definitions.
+
+
+## [0.1.2] - 2026-02-08
+
+### Added
+- Updated README documentation.
+
+## [0.1.3] - 2026-02-10
+
+### Fixed
+- Fixed an issue where OnlyOffice editors would initialize in editable mode even when configured as read-only.
+
+### Added
+- Exposed `save()` method in OnlyOffice sub-components (`OnlyOfficeDoc`, `OnlyOfficeXls`, `OnlyOfficePpt`) to allow manual save triggering via component ref.
+- Updated README documentation with manual save usage examples.
+
+## [0.1.4] - 2026-02-10
+
+### Fixed
+- Fixed an issue where OnlyOffice theme switching would fail in WASM mode by enforcing localStorage settings and runtime commands.
+
+### Refactored
+- Simplified theme control logic by removing the redundant `isDark` prop. The `theme` prop ('light' | 'dark' | 'auto') now handles all theme scenarios.
+

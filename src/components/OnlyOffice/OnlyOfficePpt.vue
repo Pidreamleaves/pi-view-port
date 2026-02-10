@@ -11,35 +11,16 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, watch, type PropType, computed, ref } from 'vue';
+import { onMounted, onUnmounted, watch, type PropType, ref } from 'vue';
 import { initializeOnlyOffice, createEditorView, onlyofficeEventbus, ONLYOFFICE_EVENT_KEYS, type EditorManager, getOnlyOfficeLang } from '@/utils/onlyoffice';
-import { useViewerTheme } from '@/theme';
 
 const props = defineProps({
   file: { type: Object as PropType<File>, required: true },
-  readOnly: { type: Boolean, default: false },
-  theme: { type: String as PropType<'light' | 'dark' | 'auto'>, default: undefined },
-  isDark: { type: Boolean, default: undefined }
+  readOnly: { type: Boolean, default: true },
+  isDark: { type: Boolean, default: false }
 });
 
 const emit = defineEmits(['ready', 'save', 'error']);
-
-const injectedTheme = useViewerTheme();
-const prefersDark = ref(false);
-let mediaQueryList: MediaQueryList | null = null;
-
-const onMediaChange = (event: MediaQueryListEvent) => {
-  prefersDark.value = event.matches;
-};
-
-const resolvedIsDark = computed(() => {
-  if (typeof props.isDark === 'boolean') return props.isDark;
-  if (props.theme === 'dark') return true;
-  if (props.theme === 'light') return false;
-  if (typeof injectedTheme?.isDark === 'boolean') return injectedTheme.isDark;
-  if (injectedTheme?.mode) return injectedTheme.mode === 'dark';
-  return prefersDark.value;
-});
 
 // 生成唯一 ID
 const containerId = `office-ppt-${Math.random().toString(36).slice(2)}`;
@@ -66,7 +47,7 @@ onMounted(async () => {
       readOnly: props.readOnly,
       containerId: containerId,
       lang: getOnlyOfficeLang(),
-      theme: resolvedIsDark.value ? 'theme-dark' : 'theme-light',
+      theme: props.isDark ? 'theme-dark' : 'theme-light',
     });
 
     // 监听文档就绪事件
@@ -85,7 +66,7 @@ onMounted(async () => {
     };
     onlyofficeEventbus.on(ONLYOFFICE_EVENT_KEYS.SAVE_DOCUMENT, saveHandler);
     
-    (window as any)[`_ppt_handlers_${containerId}`] = { ready: readyHandler, save: saveHandler };
+    eventHandlers = { ready: readyHandler, save: saveHandler };
 
   } catch (e) {
     console.error('OnlyOfficePpt init failed:', e);
@@ -93,13 +74,20 @@ onMounted(async () => {
   }
 });
 
-onMounted(() => {
-  if (typeof window !== 'undefined' && window.matchMedia) {
-    mediaQueryList = window.matchMedia('(prefers-color-scheme: dark)');
-    prefersDark.value = mediaQueryList.matches;
-    mediaQueryList.addEventListener('change', onMediaChange);
+// 暴露保存方法
+const save = () => {
+  if (editorManager) {
+    editorManager.export();
+  } else {
+    console.warn('OnlyOfficePpt: save called but editorManager is not ready');
   }
+};
+
+defineExpose({
+  save,
 });
+
+let eventHandlers: { ready: any, save: any } | null = null;
 
 onUnmounted(() => {
   if (editorManager) {
@@ -107,15 +95,10 @@ onUnmounted(() => {
   }
   
   // 清理事件监听
-  const handlers = (window as any)[`_ppt_handlers_${containerId}`];
-  if (handlers) {
-      onlyofficeEventbus.off(ONLYOFFICE_EVENT_KEYS.DOCUMENT_READY, handlers.ready);
-      onlyofficeEventbus.off(ONLYOFFICE_EVENT_KEYS.SAVE_DOCUMENT, handlers.save);
-      delete (window as any)[`_ppt_handlers_${containerId}`];
-  }
-  if (mediaQueryList) {
-    mediaQueryList.removeEventListener('change', onMediaChange);
-    mediaQueryList = null;
+  if (eventHandlers) {
+    onlyofficeEventbus.off(ONLYOFFICE_EVENT_KEYS.DOCUMENT_READY, eventHandlers.ready);
+    onlyofficeEventbus.off(ONLYOFFICE_EVENT_KEYS.SAVE_DOCUMENT, eventHandlers.save);
+    eventHandlers = null;
   }
 });
 
@@ -125,7 +108,7 @@ watch(() => props.readOnly, (newVal) => {
   }
 });
 
-watch(resolvedIsDark, (newVal) => {
+watch(() => props.isDark, (newVal) => {
   if (editorManager) {
     editorManager.setTheme(newVal ? 'theme-dark' : 'theme-light');
   }

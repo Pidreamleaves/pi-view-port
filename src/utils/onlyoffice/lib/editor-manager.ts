@@ -355,6 +355,11 @@ class EditorManager {
       this.editorConfig.theme = themeId;
     }
 
+    // 在 WASM 模式下，直接调用 editor.setTheme 往往不稳定或无效。
+    // 为了确保主题切换 100% 生效，我们暂时强制使用 reload (销毁并重建) 策略。
+    // 待确认 WASM 版本支持动态切换后，可恢复以下优化代码。
+    
+    /* 
     const editor = this.get();
     if (editor && (editor as any).setTheme) {
       try {
@@ -362,14 +367,15 @@ class EditorManager {
           id: themeId
         });
         console.log(`[EditorManager ${this.instanceId}] Theme updated to: ${themeId}`);
+        return;
       } catch (error) {
         console.warn(`[EditorManager ${this.instanceId}] Failed to set theme, attempting reload:`, error);
-        this.reload({ theme: themeId });
       }
-    } else {
-      console.warn(`[EditorManager ${this.instanceId}] setTheme is not supported or editor not ready, attempting reload`);
-      this.reload({ theme: themeId });
-    }
+    } 
+    */
+
+    console.log(`[EditorManager ${this.instanceId}] Using reload to apply theme: ${themeId}`);
+    this.reload({ theme: themeId });
   }
 
   /**
@@ -471,7 +477,6 @@ class EditorManager {
     try {
       const currentInstanceId = this.instanceId;
       console.log(`[EditorManager ${currentInstanceId}] Trying downloadAs method`);
-      (editor as any).downloadAs();
       
       // 等待保存事件，但只接收属于当前实例的事件
       const result = await new Promise<any>((resolve, reject) => {
@@ -490,7 +495,16 @@ class EditorManager {
           // 如果不是当前实例的事件，继续等待
         };
         
+        // 先注册监听器，再调用 downloadAs，防止事件在注册前触发（如果是同步触发）
         onlyofficeEventbus.on(ONLYOFFICE_EVENT_KEYS.SAVE_DOCUMENT, handleSave);
+        
+        try {
+          (editor as any).downloadAs();
+        } catch (e) {
+          clearTimeout(timeoutId);
+          onlyofficeEventbus.off(ONLYOFFICE_EVENT_KEYS.SAVE_DOCUMENT, handleSave);
+          reject(e);
+        }
       });
       
       // 添加媒体信息到结果中

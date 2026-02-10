@@ -22,8 +22,6 @@ const props = withDefaults(defineProps<{
   fullscreen?: boolean;
   /** 主题模式：'light' | 'dark' | 'auto' */
   theme?: 'light' | 'dark' | 'auto';
-  /** 主题暗色状态 */
-  isDark?: boolean;
   /** 支持的文件类型配置 */
   supportedTypes?: SupportedFileTypes;
   /** 是否启用默认样式 */
@@ -99,9 +97,9 @@ onUnmounted(() => {
 const injectedTheme = useViewerTheme();
 
 const isDarkMode = computed(() => {
-  if (typeof props.isDark === 'boolean') return props.isDark;
   if (props.theme === 'dark') return true;
   if (props.theme === 'light') return false;
+  // auto 模式
   if (typeof injectedTheme?.isDark === 'boolean') return injectedTheme.isDark;
   if (injectedTheme?.mode) return injectedTheme.mode === 'dark';
   return prefersDark.value;
@@ -291,6 +289,20 @@ const onLoadError = (err: FileLoadError) => {
   emit('load-error', err);
 };
 
+// 暴露当前预览组件的 save 方法（如果支持）
+const activeViewerRef = ref<any>(null);
+const save = () => {
+  if (activeViewerRef.value && typeof activeViewerRef.value.save === 'function') {
+    activeViewerRef.value.save();
+  } else {
+    console.warn('FileViewer: Current viewer does not support save method');
+  }
+};
+
+defineExpose({
+  save,
+});
+
 watch(() => [props.fileUrl, props.fileData, props.fileType], loadViewer);
 </script>
 
@@ -355,11 +367,11 @@ watch(() => [props.fileUrl, props.fileData, props.fileType], loadViewer);
       <component 
         :is="activeComponent"
         v-if="activeComponent && !error"
+        ref="activeViewerRef"
         :file-url="fileUrl"
         :file-data="fileData"
         :file-name="fileName"
-        :theme="props.theme"
-        :is-dark="props.isDark"
+        :is-dark="isDarkMode"
         :use-default-styles="props.useDefaultStyles"
         :office-config="props.officeConfig"
         @load-complete="onLoadComplete"

@@ -4,6 +4,7 @@
 支持 PDF、Markdown、HTML、图片、视频、音频以及 **Office 文档 (Word, Excel, PPT)** 的预览。
 原为内部应用使用，现解耦为独立库，方便外部应用集成。
 
+[![GitHub](https://img.shields.io/badge/GitHub-Repository-181717?style=flat-square&logo=github)](https://github.com/Pidreamleaves/pi-view-port)
 ![Vue 3](https://img.shields.io/badge/Vue-3.x-42b883?style=flat-square)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue?style=flat-square)
 ![License](https://img.shields.io/badge/License-AGPL-green?style=flat-square)
@@ -127,7 +128,6 @@ export default defineConfig({
 | `fileType` | `string` | - | 显式指定文件类型 (如 'pdf', 'docx')，若不传则自动检测 |
 | `fullscreen` | `boolean` | `false` | 是否初始全屏 |
 | `theme` | `'light' \| 'dark' \| 'auto'` | `'auto'` | 主题模式 |
-| `isDark` | `boolean` | - | 强制指定暗色模式状态 |
 | `useDefaultStyles` | `boolean` | `true` | 是否启用默认的容器样式 |
 | `officeConfig` | `object` | `{ editable: false }` | Office 组件专属配置 (详见下表) |
 
@@ -164,6 +164,59 @@ export default defineConfig({
 
 ```ts
 import { OnlyOfficeDoc, OnlyOfficeXls } from 'pi-view-port';
+```
+
+### 手动触发保存
+
+`FileViewer` 组件（以及底层的 OnlyOffice 子组件）暴露了 `save()` 方法，允许你通过代码触发保存流程。
+
+```vue
+<script setup lang="ts">
+import { ref } from 'vue';
+import { FileViewer } from 'pi-view-port';
+
+const viewerRef = ref();
+
+const handleSave = () => {
+  // 1. 触发保存生成流程
+  viewerRef.value?.save();
+};
+
+const onSaveComplete = async (data: any) => {
+  // data 包含: { fileName, fileType, binData (Uint8Array) }
+  console.log('文件已生成:', data.fileName);
+
+  // 2. 将二进制数据转换为 File 对象
+  const file = new File([data.binData], data.fileName, {
+    type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+  });
+
+  // 3. 上传到服务器
+  const formData = new FormData();
+  formData.append('file', file);
+
+  try {
+    // 示例上传请求
+    await fetch('/api/upload', {
+      method: 'POST',
+      body: formData
+    });
+    alert('保存并上传成功！');
+  } catch (err) {
+    console.error('上传失败', err);
+  }
+};
+</script>
+
+<template>
+  <button @click="handleSave">保存并上传</button>
+  <FileViewer
+    ref="viewerRef"
+    :file-url="fileUrl"
+    :office-config="{ editable: true }"
+    @save="onSaveComplete"
+  />
+</template>
 ```
 
 ## 常见问题
